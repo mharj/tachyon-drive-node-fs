@@ -1,3 +1,4 @@
+import * as zod from 'zod';
 import * as chai from 'chai';
 import 'mocha';
 import {MemoryStorageDriver, IPersistSerializer, IStorageDriver} from 'tachyon-drive';
@@ -6,18 +7,22 @@ import {CryptoBufferProcessor} from '../src/processors/CryptoBufferProcessor';
 
 const expect = chai.expect;
 
-interface Data {
-	test: string;
-}
+const dataSchema = zod.object({
+	test: zod.string(),
+});
+
+type Data = zod.infer<typeof dataSchema>;
 
 const bufferSerializer: IPersistSerializer<Data, Buffer> = {
 	serialize: (data: Data) => Buffer.from(JSON.stringify(data)),
 	deserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
+	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
 
 const objectSerializer: IPersistSerializer<Data, Data> = {
 	serialize: (data: Data) => ({...data}),
 	deserialize: (value: Data) => ({...value}),
+	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
 
 const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
@@ -28,7 +33,7 @@ const driverSet = new Set<IStorageDriver<Data>>([
 	new FileStorageDriver('CryptFileStorageDriver', './test/test.aes', bufferSerializer, processor),
 ]);
 
-const data: Data = {test: 'demo'};
+const data = dataSchema.parse({test: 'demo'});
 
 describe('StorageDriver', () => {
 	driverSet.forEach((currentDriver) => {
