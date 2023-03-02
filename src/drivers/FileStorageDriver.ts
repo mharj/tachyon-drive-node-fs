@@ -23,6 +23,10 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	}
 
 	protected async handleStore(buffer: Buffer): Promise<void> {
+		// buffer sainity check
+		if (!Buffer.isBuffer(buffer)) {
+			throw new TypeError(`FileStorageDriver '${this.name}' can only store Buffers`);
+		}
 		await writeFile(this.fileName, buffer);
 		this.setFileWatcher();
 	}

@@ -1,9 +1,12 @@
 import * as zod from 'zod';
 import * as chai from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 import 'mocha';
 import {MemoryStorageDriver, IPersistSerializer, IStorageDriver} from 'tachyon-drive';
 import {FileStorageDriver} from '../src/drivers/FileStorageDriver';
 import {CryptoBufferProcessor} from '../src/processors/CryptoBufferProcessor';
+
+chai.use(chaiAsPromised);
 
 const expect = chai.expect;
 
@@ -61,6 +64,18 @@ describe('StorageDriver', () => {
 				expect(await currentDriver.hydrate()).to.eq(undefined);
 				expect(currentDriver.isInitialized).to.be.eq(true);
 			});
+		});
+	});
+	describe('Broken serializer', () => {
+		it('should throw error if serialized does not provide buffer data', async () => {
+			const brokenSerializer = {
+				serialize: (data: Data) => data,
+				deserialize: (buffer: Buffer) => buffer,
+				validator: (data: Data) => dataSchema.safeParse(data).success,
+			} as unknown as IPersistSerializer<Data, Buffer>;
+
+			const brokenDriver = new FileStorageDriver('BrokenSerializer', './test/test.json', brokenSerializer);
+			await expect(brokenDriver.store(data)).to.be.rejectedWith(TypeError, `FileStorageDriver 'BrokenSerializer' can only store Buffers`);
 		});
 	});
 });
