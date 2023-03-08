@@ -3,6 +3,7 @@ import {existsSync, watchFile, unwatchFile, Stats} from 'fs';
 import {StorageDriver, IStoreProcessor, IPersistSerializer, ILoggerLike} from 'tachyon-drive';
 
 export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
+	private isWriting = false;
 	private fileName: string;
 	private fileWatch = false;
 
@@ -15,6 +16,7 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	) {
 		super(name, serializer, processor, logger);
 		this.fileName = fileName;
+		this.fileWatcher = this.fileWatcher.bind(this);
 	}
 
 	protected handleInit(): Promise<boolean> {
@@ -27,8 +29,10 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 		if (!Buffer.isBuffer(buffer)) {
 			throw new TypeError(`FileStorageDriver '${this.name}' can only store Buffers`);
 		}
+		this.isWriting = true;
 		await writeFile(this.fileName, buffer);
 		this.setFileWatcher();
+		this.isWriting = false;
 	}
 
 	protected async handleHydrate(): Promise<Buffer | undefined> {
@@ -46,7 +50,9 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 			this.fileWatch = false;
 		}
 		if (existsSync(this.fileName)) {
+			this.isWriting = true;
 			await unlink(this.fileName);
+			this.isWriting = false;
 		}
 		await this.handleUpdate(); // emit change
 	}
@@ -59,6 +65,8 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	}
 
 	private async fileWatcher(_curr: Stats, _prev: Stats) {
-		await this.handleUpdate();
+		if (!this.isWriting) {
+			await this.handleUpdate();
+		}
 	}
 }
