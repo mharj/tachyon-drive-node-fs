@@ -1,5 +1,7 @@
+/* eslint-disable no-unused-expressions */
 import * as chai from 'chai';
 import 'mocha';
+import {isValidStoreProcessor} from 'tachyon-drive';
 import {CryptoBufferProcessor} from '../src/processors/CryptoBufferProcessor';
 const expect = chai.expect;
 const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
@@ -16,5 +18,8 @@ describe('CryptoProcessor', () => {
 	it('should store to storage driver', async () => {
 		const decryptedData = await processor.postHydrate(encryptedData);
 		expect(decryptedData).to.eql(data);
+	});
+	it('should be valid processor', async () => {
+		expect(isValidStoreProcessor(processor)).to.be.true;
 	});
 });

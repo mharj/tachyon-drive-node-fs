@@ -33,7 +33,7 @@ const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
 const driverSet = new Set<IStorageDriver<Data>>([
 	new MemoryStorageDriver('MemoryStorageDriver', objectSerializer),
 	new FileStorageDriver('FileStorageDriver', './test/test.json', bufferSerializer),
-	new FileStorageDriver('CryptFileStorageDriver', './test/test.aes', bufferSerializer, processor),
+	new FileStorageDriver('CryptFileStorageDriver', async () => './test/test.aes', bufferSerializer, processor),
 ]);
 
 const data = dataSchema.parse({test: 'demo'});
