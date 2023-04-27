@@ -1,11 +1,12 @@
-import {readFile, writeFile, unlink} from 'fs/promises';
-import {existsSync, watchFile, unwatchFile, Stats} from 'fs';
-import {StorageDriver, IStoreProcessor, IPersistSerializer, ILoggerLike} from 'tachyon-drive';
+import {existsSync, Stats, unwatchFile, watchFile} from 'fs';
+import {ILoggerLike, IPersistSerializer, IStoreProcessor, StorageDriver} from 'tachyon-drive';
+import {readFile, unlink, writeFile} from 'fs/promises';
+
+type EventualFileName = string | Promise<string> | (() => string | Promise<string>);
 
 export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	private isWriting = false;
-	private fileNameOrPromise: string | (() => Promise<string>);
-	private fileName: string | undefined;
+	private fileNameOrPromise: EventualFileName;
 	private fileWatch = false;
 
 	/**
@@ -18,7 +19,7 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	 */
 	constructor(
 		name: string,
-		fileName: string | (() => Promise<string>),
+		fileName: EventualFileName,
 		serializer: IPersistSerializer<Input, Buffer>,
 		processor?: IStoreProcessor<Buffer>,
 		logger?: ILoggerLike | Console,
@@ -103,20 +104,10 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	 * Build file name from fileNameOrPromise
 	 */
 	private async getFileName(): Promise<string> {
-		// check if we already have the file name
-		if (this.fileName) {
-			return this.fileName;
+		const value = await (typeof this.fileNameOrPromise === 'function' ? this.fileNameOrPromise() : this.fileNameOrPromise);
+		if (typeof value !== 'string') {
+			throw new TypeError(`FileStorageDriver '${this.name}' fileName argument must return a string, value: ${JSON.stringify(value)}`);
 		}
-		switch (typeof this.fileNameOrPromise) {
-			case 'function':
-				this.fileName = await this.fileNameOrPromise();
-				break;
-			case 'string':
-				this.fileName = this.fileNameOrPromise;
-				break;
-			default:
-				throw new TypeError(`FileStorageDriver '${this.name}' fileName must be a string or a async function that returns a string`);
-		}
-		return this.fileName;
+		return value;
 	}
 }

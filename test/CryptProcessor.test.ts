@@ -1,8 +1,8 @@
 /* eslint-disable no-unused-expressions */
-import * as chai from 'chai';
 import 'mocha';
-import {isValidStoreProcessor} from 'tachyon-drive';
+import * as chai from 'chai';
 import {CryptoBufferProcessor} from '../src/processors/CryptoBufferProcessor';
+import {isValidStoreProcessor} from 'tachyon-drive';
 const expect = chai.expect;
 const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
 
