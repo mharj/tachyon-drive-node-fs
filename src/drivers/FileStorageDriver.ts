@@ -1,16 +1,20 @@
 import {existsSync, Stats, unwatchFile, watchFile} from 'fs';
-import {ILoggerLike, IPersistSerializer, IStoreProcessor, StorageDriver} from 'tachyon-drive';
+import {IPersistSerializer, IStoreProcessor, StorageDriver} from 'tachyon-drive';
 import {readFile, unlink, writeFile} from 'fs/promises';
+import type {ILoggerLike} from '@avanio/logger-like';
 
 type EventualFileName = string | Promise<string> | (() => string | Promise<string>);
 
+/**
+ * A storage driver that uses the local file system to store files.
+ */
 export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	private isWriting = false;
 	private fileNameOrPromise: EventualFileName;
 	private fileWatch = false;
 
 	/**
-	 * FileStorageDriver
+	 * Creates a new instance of the `FileStorageDriver` class.
 	 * @param name - name of the driver
 	 * @param fileName - file name or async function that returns a file name
 	 * @param serializer - serializer to serialize and deserialize data (to and from Buffer)
@@ -31,9 +35,9 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	/**
 	 * initialize watcher if have a file
 	 */
-	protected handleInit(): Promise<boolean> {
-		this.setFileWatcher();
-		return Promise.resolve(true);
+	protected async handleInit(): Promise<boolean> {
+		await this.setFileWatcher();
+		return true;
 	}
 
 	/**
@@ -46,7 +50,7 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 		}
 		this.isWriting = true;
 		await writeFile(await this.getFileName(), buffer);
-		this.setFileWatcher();
+		await this.setFileWatcher();
 		this.isWriting = false;
 	}
 
@@ -57,7 +61,7 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 		const fileName = await this.getFileName();
 		if (existsSync(fileName)) {
 			const buffer = await readFile(fileName);
-			this.setFileWatcher();
+			await this.setFileWatcher();
 			return buffer;
 		}
 		return undefined;
@@ -95,6 +99,8 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	 * method for file watcher instance
 	 */
 	private async fileWatcher(_curr: Stats, _prev: Stats) {
+		/* istanbul ignore next */
+		// ignore watcher events if writing
 		if (!this.isWriting) {
 			await this.handleUpdate();
 		}

@@ -6,7 +6,8 @@
     "scripts": {
         "build": "tsc",
         "prepublishOnly": "npm run build",
-        "test": "mocha",
+        "test": "nyc mocha",
+        "coverage": "nyc report --reporter=lcovonly",
         "lint": "eslint src"
     },
     "files": [
@@ -52,12 +53,14 @@
         "eslint-plugin-prettier": "^4.2.1",
         "eslint-plugin-sonarjs": "^0.19.0",
         "mocha": "^10.2.0",
+        "nyc": "^15.1.0",
         "prettier": "^2.8.8",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.4",
         "zod": "^3.21.4"
     },
     "dependencies": {
-        "tachyon-drive": "^0.0.6"
+        "@avanio/logger-like": "^0.1.0",
+        "tachyon-drive": "^0.0.8"
     }
 }

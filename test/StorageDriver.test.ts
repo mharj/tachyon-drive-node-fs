@@ -69,6 +69,15 @@ describe('StorageDriver', () => {
 			});
 		});
 	});
+	describe('Broken StorageDriver', () => {
+		it('should fail to start if fileName is not valid', async () => {
+			const brokenDriver = new FileStorageDriver('BrokenDriver', {} as string, bufferSerializer);
+			await expect(brokenDriver.init()).to.be.eventually.rejectedWith(
+				Error,
+				`FileStorageDriver 'BrokenDriver' fileName argument must return a string, value: {}`,
+			);
+		});
+	});
 	describe('Broken serializer', () => {
 		it('should throw error if serialized does not provide buffer data', async () => {
 			const brokenSerializer = {
