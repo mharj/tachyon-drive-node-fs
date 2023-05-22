@@ -41,6 +41,13 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	}
 
 	/**
+	 * unload watcher if have a file
+	 */
+	protected async handleUnload(): Promise<boolean> {
+		return this.unsetFileWatcher();
+	}
+
+	/**
 	 * Actual implementation of store data to the file
 	 */
 	protected async handleStore(buffer: Buffer): Promise<void> {
@@ -71,11 +78,8 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	 * Actual implementation of delete file and unwatch it
 	 */
 	protected async handleClear(): Promise<void> {
+		await this.unsetFileWatcher();
 		const fileName = await this.getFileName();
-		if (this.fileWatch) {
-			unwatchFile(fileName, this.fileWatcher);
-			this.fileWatch = false;
-		}
 		if (existsSync(fileName)) {
 			this.isWriting = true;
 			await unlink(fileName);
@@ -93,6 +97,16 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 			watchFile(fileName, this.fileWatcher);
 			this.fileWatch = true;
 		}
+	}
+
+	private async unsetFileWatcher(): Promise<boolean> {
+		const fileName = await this.getFileName();
+		if (this.fileWatch) {
+			unwatchFile(fileName, this.fileWatcher);
+			this.fileWatch = false;
+			return true;
+		}
+		return false;
 	}
 
 	/**

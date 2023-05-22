@@ -67,6 +67,11 @@ describe('StorageDriver', () => {
 				expect(await currentDriver.hydrate()).to.eq(undefined);
 				expect(currentDriver.isInitialized).to.be.eq(true);
 			});
+			it('should unload to storage driver', async () => {
+				expect(currentDriver.isInitialized).to.be.eq(true);
+				await currentDriver.unload();
+				expect(currentDriver.isInitialized).to.be.eq(false);
+			});
 		});
 	});
 	describe('Broken StorageDriver', () => {
