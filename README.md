@@ -21,4 +21,15 @@ const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
 const driver = new FileStorageDriver('FileStorageDriver', './store.json.aes', bufferSerializer, processor);
 ```
 
+```typescript
+//  includes common strToBufferSerializer
+const jsonSerialization: IPersistSerializer<Data, string> = {
+	deserialize: (buffer: string) => JSON.parse(buffer.toString()),
+	serialize: (data: Data) => JSON.stringify(data),
+	validator: (data: Data) => dataSchema.safeParse(data).success,
+};
+
+const bufferSerializer: IPersistSerializer<Data, Buffer> = nextSerializer<Data, string, Buffer>(jsonSerialization, strToBufferSerializer);
+```
+
 ### see more on NPMJS [tachyon-drive](https://www.npmjs.com/package/tachyon-drive)
