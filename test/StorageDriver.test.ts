@@ -3,9 +3,10 @@ import 'mocha';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
 import * as zod from 'zod';
-import {IPersistSerializer, IStorageDriver, MemoryStorageDriver} from 'tachyon-drive';
+import {IPersistSerializer, IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
 import {CryptoBufferProcessor} from '../src/processors/CryptoBufferProcessor';
 import {FileStorageDriver} from '../src/drivers/FileStorageDriver';
+import {strToBufferSerializer} from '../src/';
 
 chai.use(chaiAsPromised);
 
@@ -17,11 +18,13 @@ const dataSchema = zod.object({
 
 type Data = zod.infer<typeof dataSchema>;
 
-const bufferSerializer: IPersistSerializer<Data, Buffer> = {
-	deserialize: (buffer: Buffer) => JSON.parse(buffer.toString()),
-	serialize: (data: Data) => Buffer.from(JSON.stringify(data)),
+const jsonSerialization: IPersistSerializer<Data, string> = {
+	deserialize: (buffer: string) => JSON.parse(buffer.toString()),
+	serialize: (data: Data) => JSON.stringify(data),
 	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
+
+const bufferSerializer: IPersistSerializer<Data, Buffer> = nextSerializer<Data, string, Buffer>(jsonSerialization, strToBufferSerializer);
 
 const objectSerializer: IPersistSerializer<Data, Data> = {
 	deserialize: (value: Data) => ({...value}),
