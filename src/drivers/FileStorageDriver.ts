@@ -1,4 +1,4 @@
-import {existsSync, Stats, unwatchFile, watchFile} from 'fs';
+import {existsSync, FSWatcher, watch} from 'fs';
 import {IPersistSerializer, IStoreProcessor, StorageDriver} from 'tachyon-drive';
 import {readFile, unlink, writeFile} from 'fs/promises';
 import type {ILoggerLike} from '@avanio/logger-like';
@@ -11,7 +11,7 @@ type EventualFileName = string | Promise<string> | (() => string | Promise<strin
 export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	private isWriting = false;
 	private fileNameOrPromise: EventualFileName;
-	private fileWatch = false;
+	private fileWatch: FSWatcher | undefined;
 
 	/**
 	 * Creates a new instance of the `FileStorageDriver` class.
@@ -28,8 +28,9 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 		processor?: IStoreProcessor<Buffer>,
 		logger?: ILoggerLike | Console,
 	) {
-		super(name, serializer, processor, logger);
+		super(name, serializer, null, processor, logger);
 		this.fileNameOrPromise = fileName;
+		this.fileWatcher = this.fileWatcher.bind(this);
 	}
 
 	/**
@@ -85,7 +86,6 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 			await unlink(fileName);
 			this.isWriting = false;
 		}
-		await this.handleUpdate(); // emit change
 	}
 
 	/**
@@ -94,16 +94,13 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	private async setFileWatcher() {
 		const fileName = await this.getFileName();
 		if (!this.fileWatch && existsSync(fileName)) {
-			watchFile(fileName, this.fileWatcher);
-			this.fileWatch = true;
+			this.fileWatch = watch(fileName, this.fileWatcher);
 		}
 	}
 
 	private async unsetFileWatcher(): Promise<boolean> {
-		const fileName = await this.getFileName();
 		if (this.fileWatch) {
-			unwatchFile(fileName, this.fileWatcher);
-			this.fileWatch = false;
+			this.fileWatch.close();
 			return true;
 		}
 		return false;
@@ -112,10 +109,10 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	/**
 	 * method for file watcher instance
 	 */
-	private async fileWatcher(_curr: Stats, _prev: Stats) {
+	private async fileWatcher(event: 'rename' | 'change') {
 		/* istanbul ignore next */
 		// ignore watcher events if writing
-		if (!this.isWriting) {
+		if (!this.isWriting && event === 'change') {
 			await this.handleUpdate();
 		}
 	}

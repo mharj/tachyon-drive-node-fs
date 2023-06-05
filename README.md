@@ -21,6 +21,13 @@ const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
 const driver = new FileStorageDriver('FileStorageDriver', './store.json.aes', bufferSerializer, processor);
 ```
 
+### Example usage of local notification file updates when running multiple process on same host
+
+```typescript
+const fileUpdateNotify = new FileUpdateNotify('./store.notify');
+const driver = new SomeDriver('SomeDriverWithoutUpdateNotification', bufferSerializer, fileUpdateNotify);
+```
+
 ```typescript
 //  includes common strToBufferSerializer
 const jsonSerialization: IPersistSerializer<Data, string> = {

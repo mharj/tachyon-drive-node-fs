@@ -2,11 +2,13 @@
 import 'mocha';
 import * as chai from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import * as sinon from 'sinon';
 import * as zod from 'zod';
 import {IPersistSerializer, IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
+import {readFile, writeFile} from 'fs/promises';
 import {CryptoBufferProcessor} from '../src/processors/CryptoBufferProcessor';
 import {FileStorageDriver} from '../src/drivers/FileStorageDriver';
-import {strToBufferSerializer} from '../src/';
+import {FileUpdateNotify, strToBufferSerializer} from '../src/';
 
 chai.use(chaiAsPromised);
 
@@ -34,35 +36,64 @@ const objectSerializer: IPersistSerializer<Data, Data> = {
 
 const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
 
-const driverSet = new Set<IStorageDriver<Data>>([
-	new MemoryStorageDriver('MemoryStorageDriver', objectSerializer),
-	new FileStorageDriver('FileStorageDriver - file: string', './test/test.json', bufferSerializer),
-	new FileStorageDriver('FileStorageDriver - file: Promise<string>', Promise.resolve('./test/test.json'), bufferSerializer),
-	new FileStorageDriver('CryptFileStorageDriver - file: () => string', () => './test/test.aes', bufferSerializer, processor),
-	new FileStorageDriver('CryptFileStorageDriver - file: () => Promise<string>', async () => './test/test.aes', bufferSerializer, processor),
+const driverSet = new Set<{driver: IStorageDriver<Data>; fileName?: string}>([
+	{driver: new MemoryStorageDriver('MemoryStorageDriver', objectSerializer, new FileUpdateNotify('./test/update.notify')), fileName: './test/update.notify'},
+	{driver: new FileStorageDriver('FileStorageDriver - file: string', './test/test.json', bufferSerializer), fileName: './test/test.json'},
+	{
+		driver: new FileStorageDriver('FileStorageDriver - file: Promise<string>', Promise.resolve('./test/test.json'), bufferSerializer),
+		fileName: './test/test.json',
+	},
+	{
+		driver: new FileStorageDriver('CryptFileStorageDriver - file: () => string', () => './test/test.aes', bufferSerializer, processor),
+		fileName: './test/test.aes',
+	},
+	{
+		driver: new FileStorageDriver('CryptFileStorageDriver - file: () => Promise<string>', async () => './test/test.aes', bufferSerializer, processor),
+		fileName: './test/test.aes',
+	},
 ]);
 
 const data = dataSchema.parse({test: 'demo'});
 
+const onUpdateSpy = sinon.spy();
+
 describe('StorageDriver', () => {
-	driverSet.forEach((currentDriver) => {
+	driverSet.forEach(({driver: currentDriver, fileName}) => {
 		describe(currentDriver.name, () => {
+			beforeEach(() => {
+				onUpdateSpy.resetHistory();
+			});
 			before(async () => {
+				currentDriver.onUpdate(onUpdateSpy);
 				await currentDriver.clear();
 				expect(currentDriver.isInitialized).to.be.eq(false);
 			});
 			it('should be empty store', async () => {
 				expect(await currentDriver.hydrate()).to.eq(undefined);
 				expect(currentDriver.isInitialized).to.be.eq(true);
+				expect(onUpdateSpy.callCount).to.be.eq(0);
 			});
 			it('should store to storage driver', async () => {
 				await currentDriver.store(data);
 				expect(await currentDriver.hydrate()).to.eql(data);
 				expect(currentDriver.isInitialized).to.be.eq(true);
+				expect(onUpdateSpy.callCount).to.be.eq(0);
 			});
 			it('should restore data from storage driver', async () => {
 				expect(await currentDriver.hydrate()).to.eql(data);
 				expect(currentDriver.isInitialized).to.be.eq(true);
+				expect(onUpdateSpy.callCount).to.be.eq(0);
+			});
+			it('should noticed external file change and notify', async () => {
+				if (fileName) {
+					// MemoryStorageDriver with FileUpdateNotify does need actual time change to trigger update
+					if (currentDriver instanceof MemoryStorageDriver) {
+						await writeFile(fileName, new Date().getTime().toString());
+					} else {
+						await writeFile(fileName, await readFile(fileName));
+					}
+					expect(onUpdateSpy.callCount).to.be.greaterThan(0);
+				}
 			});
 			it('should clear to storage driver', async () => {
 				await currentDriver.clear();
@@ -74,6 +105,7 @@ describe('StorageDriver', () => {
 				expect(currentDriver.isInitialized).to.be.eq(true);
 				await currentDriver.unload();
 				expect(currentDriver.isInitialized).to.be.eq(false);
+				expect(onUpdateSpy.callCount).to.be.eq(0);
 			});
 		});
 	});
