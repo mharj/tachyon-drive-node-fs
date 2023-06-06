@@ -34,6 +34,12 @@ const objectSerializer: IPersistSerializer<Data, Data> = {
 	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
 
+function sleepPromise(ms: number): Promise<void> {
+	return new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
+
 const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
 
 const driverSet = new Set<{driver: IStorageDriver<Data>; fileName?: string}>([
@@ -92,6 +98,7 @@ describe('StorageDriver', () => {
 					} else {
 						await writeFile(fileName, await readFile(fileName));
 					}
+					await sleepPromise(200);
 					expect(onUpdateSpy.callCount).to.be.greaterThan(0);
 				}
 			});
