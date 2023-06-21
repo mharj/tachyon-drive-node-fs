@@ -63,6 +63,6 @@
     },
     "dependencies": {
         "@avanio/logger-like": "^0.1.1",
-        "tachyon-drive": "^0.3.0"
+        "tachyon-drive": "^0.3.1"
     }
 }
