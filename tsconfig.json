@@ -1,17 +1,10 @@
 {
+	"extends": "@tsconfig/node16/tsconfig.json",
 	"compilerOptions": {
-		"module": "commonjs",
-		"target": "es2020",
-		"lib": [
-			"es2020"
-		],
 		"rootDir": "./src",
 		"outDir": "./dist",
-		"moduleResolution": "node",
 		"sourceRoot": "./src",
-		"types": [
-			"node"
-		],
+		"types": ["node"],
 		"sourceMap": true,
 		"strict": true,
 		"declaration": true,
@@ -24,15 +17,9 @@
 		"noImplicitAny": true,
 		"importHelpers": true,
 		"strictNullChecks": true,
-		"noUnusedLocals": true
+		"noUnusedLocals": true,
+		"esModuleInterop": false
 	},
-	"include": [
-		"src/**/*",
-		"src/**/**/*"
-	],
-	"exclude": [
-		"node_modules",
-		"**/*.spec.ts",
-		"test"
-	]
+	"include": ["src/**/*", "src/**/**/*"],
+	"exclude": ["node_modules", "**/*.spec.ts", "test"]
 }
