@@ -18,7 +18,8 @@
 		"importHelpers": true,
 		"strictNullChecks": true,
 		"noUnusedLocals": true,
-		"esModuleInterop": false
+		"esModuleInterop": false,
+		"noUncheckedIndexedAccess": true
 	},
 	"include": ["src/**/*", "src/**/**/*"],
 	"exclude": ["node_modules", "**/*.spec.ts", "test"]
