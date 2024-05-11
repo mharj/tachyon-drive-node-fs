@@ -1,10 +1,14 @@
-import {existsSync, type FSWatcher, watch} from 'fs';
+import {existsSync, type FSWatcher, watch} from 'node:fs';
 import {type ExternalNotifyEventEmitterConstructor, type IExternalNotify} from 'tachyon-drive';
-import {readFile, unlink, writeFile} from 'fs/promises';
+import {readFile, unlink, writeFile} from 'node:fs/promises';
 import {EventEmitter} from 'events';
 import {type ILoggerLike} from '@avanio/logger-like';
 import type {Loadable} from '@luolapeikko/ts-common';
 
+/**
+ * FileUpdateNotify causes an event to be emitted when a file is updated.
+ * - Can be used to notify when storage driver itself can't handle store change events.
+ */
 export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitterConstructor) implements IExternalNotify {
 	private isWriting = false;
 	private fileName: Loadable<string>;

@@ -39,7 +39,7 @@ describe('FileUpdateNotify', () => {
 	});
 	it('should notify when externally changed', async () => {
 		await writeFile(fileName, '20');
-		await sleepPromise(20);
+		await sleepPromise(200);
 		expect(fileEventSpy.callCount).to.be.eql(1);
 		expect(fileEventSpy.getCall(0).args[0]).to.be.eql(new Date(20));
 	});

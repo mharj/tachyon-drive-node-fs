@@ -1,7 +1,12 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import {type IStoreProcessor} from 'tachyon-drive';
 import type {Loadable} from '@luolapeikko/ts-common';
 
+/**
+ * A processor that encrypts and decrypts Buffer data.
+ * - Uses AES-256-GCM encryption (iv stored in the first 12 bytes, tag in the next 16 bytes)
+ * - Secret Key is derived from a key buffer and build as sha256 hash key
+ */
 export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
 	private buffer: Loadable<Buffer>;
 	private key: string | undefined;

@@ -1,17 +1,27 @@
-import {existsSync, type FSWatcher, watch} from 'fs';
-import {type IPersistSerializer, type IStoreProcessor, StorageDriver} from 'tachyon-drive';
+import {existsSync, type FSWatcher, watch} from 'node:fs';
+import {type IPersistSerializer, type IStoreProcessor, StorageDriver, TachyonBandwidth} from 'tachyon-drive';
 import {readFile, unlink, writeFile} from 'fs/promises';
 import type {ILoggerLike} from '@avanio/logger-like';
 import type {Loadable} from '@luolapeikko/ts-common';
 
-type EventualFileName = string | Promise<string> | (() => string | Promise<string>);
+export type FileStorageDriverOptions = {
+	/**
+	 * File name or async function that returns a file name
+	 */
+	fileName: Loadable<string>;
+	/**
+	 * Speed of the file storage driver, default is "TachyonBandwidth.Large".
+	 */
+	bandwidth?: TachyonBandwidth;
+};
 
 /**
  * A storage driver that uses the local file system to store files.
  */
 export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
+	public readonly bandwidth: TachyonBandwidth;
 	private isWriting = false;
-	private fileNameOrPromise: EventualFileName;
+	private fileName: Loadable<string>;
 	private fileWatch: FSWatcher | undefined;
 
 	private fileChangeTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -19,20 +29,23 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	/**
 	 * Creates a new instance of the `FileStorageDriver` class.
 	 * @param name - name of the driver
-	 * @param fileName - file name or async function that returns a file name
+	 * @param options - options for the driver
+	 * @param options.fileName - file name or async function that returns a file name
+	 * @param options.bandwidth - speed of the file storage driver, default is "TachyonBandwidth.Large"
 	 * @param serializer - serializer to serialize and deserialize data (to and from Buffer)
 	 * @param processor - optional processor to process data before storing and after hydrating
 	 * @param logger - optional logger to log messages
 	 */
 	constructor(
 		name: string,
-		fileName: EventualFileName,
+		options: FileStorageDriverOptions,
 		serializer: IPersistSerializer<Input, Buffer>,
 		processor?: Loadable<IStoreProcessor<Buffer>>,
 		logger?: ILoggerLike | Console,
 	) {
 		super(name, serializer, null, processor, logger);
-		this.fileNameOrPromise = fileName;
+		this.bandwidth = options.bandwidth || TachyonBandwidth.Large;
+		this.fileName = options.fileName;
 		this.fileWatcher = this.fileWatcher.bind(this);
 	}
 
@@ -55,7 +68,7 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	 * Actual implementation of store data to the file
 	 */
 	protected async handleStore(buffer: Buffer): Promise<void> {
-		// buffer sainity check
+		// buffer sanity check
 		if (!Buffer.isBuffer(buffer)) {
 			throw new TypeError(`FileStorageDriver '${this.name}' can only store Buffers`);
 		}
@@ -131,7 +144,10 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	 * Build file name from fileNameOrPromise
 	 */
 	private async getFileName(): Promise<string> {
-		const value = await (typeof this.fileNameOrPromise === 'function' ? this.fileNameOrPromise() : this.fileNameOrPromise);
+		if (typeof this.fileName === 'function') {
+			this.fileName = this.fileName();
+		}
+		const value = await this.fileName;
 		if (typeof value !== 'string') {
 			throw new TypeError(`FileStorageDriver '${this.name}' fileName argument must return a string, value: ${JSON.stringify(value)}`);
 		}

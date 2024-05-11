@@ -1,6 +1,6 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 import 'mocha';
-import {CryptoBufferProcessor, FileStorageDriver, FileUpdateNotify, strToBufferSerializer} from '../src/';
+import {CryptoBufferProcessor, FileStorageDriver, type FileStorageDriverOptions, FileUpdateNotify, strToBufferSerializer} from '../src/';
 import {type IPersistSerializer, type IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
 import {readFile, writeFile} from 'fs/promises';
 import chai from 'chai';
@@ -50,22 +50,27 @@ const driverSet = new Set<{driver: IStorageDriver<Data>; fileName?: string; cryp
 		crypto: false,
 	},
 	{
-		driver: new FileStorageDriver('FileStorageDriver - file: string', './test/test.json', bufferSerializer),
+		driver: new FileStorageDriver('FileStorageDriver - file: string', {fileName: './test/test.json'}, bufferSerializer),
 		fileName: './test/test.json',
 		crypto: false,
 	},
 	{
-		driver: new FileStorageDriver('FileStorageDriver - file: Promise<string>', Promise.resolve('./test/test.json'), bufferSerializer),
+		driver: new FileStorageDriver('FileStorageDriver - file: Promise<string>', {fileName: Promise.resolve('./test/test.json')}, bufferSerializer),
 		fileName: './test/test.json',
 		crypto: false,
 	},
 	{
-		driver: new FileStorageDriver('CryptFileStorageDriver - file: () => string', () => './test/test.aes', bufferSerializer, loadCryptoProcessor),
+		driver: new FileStorageDriver('CryptFileStorageDriver - file: () => string', {fileName: () => './test/test.aes'}, bufferSerializer, loadCryptoProcessor),
 		fileName: './test/test.aes',
 		crypto: true,
 	},
 	{
-		driver: new FileStorageDriver('CryptFileStorageDriver - file: () => Promise<string>', async () => './test/test.aes', bufferSerializer, loadCryptoProcessor),
+		driver: new FileStorageDriver(
+			'CryptFileStorageDriver - file: () => Promise<string>',
+			{fileName: async () => './test/test.aes'},
+			bufferSerializer,
+			loadCryptoProcessor,
+		),
 		fileName: './test/test.aes',
 		crypto: true,
 	},
@@ -134,10 +139,10 @@ describe('StorageDriver', () => {
 	});
 	describe('Broken StorageDriver', () => {
 		it('should fail to start if fileName is not valid', async () => {
-			const brokenDriver = new FileStorageDriver('BrokenDriver', {} as string, bufferSerializer);
+			const brokenDriver = new FileStorageDriver('BrokenDriver', {} as FileStorageDriverOptions, bufferSerializer);
 			await expect(brokenDriver.init()).to.be.eventually.rejectedWith(
 				Error,
-				`FileStorageDriver 'BrokenDriver' fileName argument must return a string, value: {}`,
+				`FileStorageDriver 'BrokenDriver' fileName argument must return a string, value: undefined`,
 			);
 		});
 	});
@@ -149,7 +154,7 @@ describe('StorageDriver', () => {
 				validator: (data: Data) => dataSchema.safeParse(data).success,
 			} as unknown as IPersistSerializer<Data, Buffer>;
 
-			const brokenDriver = new FileStorageDriver('BrokenSerializer', './test/test.json', brokenSerializer);
+			const brokenDriver = new FileStorageDriver('BrokenSerializer', {fileName: './test/test.json'}, brokenSerializer);
 			await expect(brokenDriver.store(data)).to.be.rejectedWith(TypeError, `FileStorageDriver 'BrokenSerializer' can only store Buffers`);
 		});
 	});

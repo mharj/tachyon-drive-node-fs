@@ -2,9 +2,18 @@
     "name": "tachyon-drive-node-fs",
     "version": "0.5.1",
     "description": "Nodejs fs module storage driver implementation",
-    "main": "./dist/index.js",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"require": "./dist/index.js",
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.ts"
+		}
+	},
     "scripts": {
-        "build": "tsc",
+        "build": "tsup src/index.ts --minify --sourcemap --format cjs,esm --dts --clean",
         "prepublishOnly": "npm run build",
         "test": "nyc mocha",
         "coverage": "nyc report --reporter=lcovonly",
@@ -60,13 +69,14 @@
         "prettier": "^3.2.5",
         "sinon": "^17.0.2",
         "ts-node": "^10.9.2",
+        "tsup": "^8.0.2",
         "typescript": "^5.4.5",
         "zod": "^3.23.8"
     },
     "dependencies": {
         "@avanio/logger-like": "^0.1.1",
         "@luolapeikko/ts-common": "^0.0.4",
-        "tachyon-drive": "^0.5.1",
+        "tachyon-drive": "^0.6.0",
         "tslib": "^2.6.2"
     }
 }
