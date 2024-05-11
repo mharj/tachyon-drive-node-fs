@@ -14,6 +14,8 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	private fileNameOrPromise: EventualFileName;
 	private fileWatch: FSWatcher | undefined;
 
+	private fileChangeTimeout: ReturnType<typeof setTimeout> | undefined;
+
 	/**
 	 * Creates a new instance of the `FileStorageDriver` class.
 	 * @param name - name of the driver
@@ -114,7 +116,14 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 		/* istanbul ignore next */
 		// ignore watcher events if writing
 		if (!this.isWriting && event === 'change') {
-			await this.handleUpdate();
+			if (this.fileChangeTimeout) {
+				clearTimeout(this.fileChangeTimeout);
+			}
+			// delay to avoid multiple file change events
+			this.fileChangeTimeout = setTimeout(() => {
+				this.fileChangeTimeout = undefined;
+				this.handleUpdate();
+			}, 100);
 		}
 	}
 
