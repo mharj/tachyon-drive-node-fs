@@ -1,4 +1,4 @@
-import {IPersistSerializer} from 'tachyon-drive';
+import {type IPersistSerializer} from 'tachyon-drive';
 
 /**
  * Common serializer that serializes and deserializes string data to and from a Buffer. (for chain serialization)

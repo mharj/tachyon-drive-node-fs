@@ -1,7 +1,8 @@
-import {existsSync, FSWatcher, watch} from 'fs';
-import {IPersistSerializer, IStoreProcessor, StorageDriver} from 'tachyon-drive';
+import {existsSync, type FSWatcher, watch} from 'fs';
+import {type IPersistSerializer, type IStoreProcessor, StorageDriver} from 'tachyon-drive';
 import {readFile, unlink, writeFile} from 'fs/promises';
 import type {ILoggerLike} from '@avanio/logger-like';
+import type {Loadable} from '@luolapeikko/ts-common';
 
 type EventualFileName = string | Promise<string> | (() => string | Promise<string>);
 
@@ -25,7 +26,7 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 		name: string,
 		fileName: EventualFileName,
 		serializer: IPersistSerializer<Input, Buffer>,
-		processor?: IStoreProcessor<Buffer>,
+		processor?: Loadable<IStoreProcessor<Buffer>>,
 		logger?: ILoggerLike | Console,
 	) {
 		super(name, serializer, null, processor, logger);

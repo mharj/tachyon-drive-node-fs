@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-expressions */
 import 'mocha';
-import * as chai from 'chai';
+import chai from 'chai';
 import {CryptoBufferProcessor} from '../src/processors/CryptoBufferProcessor';
 import {isValidStoreProcessor} from 'tachyon-drive';
 const expect = chai.expect;

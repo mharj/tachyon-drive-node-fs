@@ -1,20 +1,20 @@
-import {existsSync, FSWatcher, watch} from 'fs';
+import {existsSync, type FSWatcher, watch} from 'fs';
+import {type ExternalNotifyEventEmitterConstructor, type IExternalNotify} from 'tachyon-drive';
 import {readFile, unlink, writeFile} from 'fs/promises';
-import {IExternalNotify} from 'tachyon-drive';
-import {ILoggerLike} from '@avanio/logger-like';
+import {EventEmitter} from 'events';
+import {type ILoggerLike} from '@avanio/logger-like';
+import type {Loadable} from '@luolapeikko/ts-common';
 
-type EventualFileName = string | Promise<string> | (() => string | Promise<string>);
-
-export class FileUpdateNotify implements IExternalNotify {
+export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitterConstructor) implements IExternalNotify {
 	private isWriting = false;
-	private fileNameOrProvider: EventualFileName;
+	private fileName: Loadable<string>;
 	private fileWatch: FSWatcher | undefined;
-	private notifyListeners = new Set<(timeStamp: Date) => Promise<void>>();
 	private logger?: ILoggerLike;
 	private currentFileTimeStamp?: Date;
 
-	constructor(fileName: EventualFileName, logger?: ILoggerLike) {
-		this.fileNameOrProvider = fileName;
+	constructor(fileName: Loadable<string>, logger?: ILoggerLike) {
+		super();
+		this.fileName = fileName;
 		this.logger = logger;
 		this.setFileWatcher();
 		this.fileWatcher = this.fileWatcher.bind(this);
@@ -30,10 +30,6 @@ export class FileUpdateNotify implements IExternalNotify {
 		this.logger?.debug(`FileUpdateNotify: unload`);
 		await this.unsetFileWatcher();
 		return unlink(await this.getFileName());
-	}
-
-	public onUpdate(callback: (timeStamp: Date) => Promise<void>): void {
-		this.notifyListeners.add(callback);
 	}
 
 	public async notifyUpdate(timeStamp: Date): Promise<void> {
@@ -79,9 +75,7 @@ export class FileUpdateNotify implements IExternalNotify {
 				if (this.currentFileTimeStamp?.getTime() !== timeStamp.getTime()) {
 					this.currentFileTimeStamp = timeStamp; // update currentFileTimeStamp
 					this.logger?.debug(`FileUpdateNotify: file change emit: ${timeStamp.getTime()}`);
-					this.notifyListeners.forEach(async (callback) => {
-						await callback(timeStamp);
-					});
+					this.emit('update', timeStamp);
 				}
 			} catch (e) {
 				this.logger?.error(`FileUpdateNotify: fileWatcher: ${e}`);
@@ -93,11 +87,9 @@ export class FileUpdateNotify implements IExternalNotify {
 	 * Build file name from fileNameOrPromise
 	 */
 	private async getFileName(): Promise<string> {
-		const value = await (typeof this.fileNameOrProvider === 'function' ? this.fileNameOrProvider() : this.fileNameOrProvider);
-		// istanbul ignore next
-		if (typeof value !== 'string') {
-			throw new TypeError(`FileUpdateNotify fileName argument must return a string, value: ${JSON.stringify(value)}`);
+		if (typeof this.fileName === 'function') {
+			this.fileName = this.fileName();
 		}
-		return value;
+		return this.fileName;
 	}
 }

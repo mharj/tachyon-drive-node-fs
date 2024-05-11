@@ -1,10 +1,10 @@
 /* eslint-disable no-unused-expressions */
 import 'mocha';
-import * as chai from 'chai';
-import * as sinon from 'sinon';
 import {readFile, writeFile} from 'fs/promises';
+import chai from 'chai';
 import {existsSync} from 'fs';
 import {FileUpdateNotify} from '../src/notify/FileUpdateNotify';
+import sinon from 'sinon';
 const expect = chai.expect;
 
 let notify: FileUpdateNotify;
@@ -24,8 +24,8 @@ describe('FileUpdateNotify', () => {
 		fileEventSpy.resetHistory();
 	});
 	before(async () => {
-		notify = new FileUpdateNotify(fileName);
-		notify.onUpdate(fileEventSpy);
+		notify = new FileUpdateNotify(() => fileName);
+		notify.on('update', fileEventSpy);
 	});
 	it('should initialize notify service', async () => {
 		await notify.init();
