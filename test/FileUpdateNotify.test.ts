@@ -47,4 +47,10 @@ describe('FileUpdateNotify', () => {
 		await notify.unload();
 		expect(existsSync(fileName)).to.be.false;
 	});
+	it('should get toString()', async () => {
+		expect(notify.toString()).to.be.equal(`FileUpdateNotify: fileName: ${fileName}`);
+	});
+	it('should get toJSON()', async () => {
+		expect(notify.toJSON()).to.be.eql({fileName, updated: 20});
+	});
 });

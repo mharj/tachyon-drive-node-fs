@@ -11,14 +11,15 @@ import type {Loadable} from '@luolapeikko/ts-common';
  */
 export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitterConstructor) implements IExternalNotify {
 	private isWriting = false;
-	private fileName: Loadable<string>;
+	private fileNameLoadable: Loadable<string>;
+	private fileName: string | undefined;
 	private fileWatch: FSWatcher | undefined;
 	private logger?: ILoggerLike;
 	private currentFileTimeStamp?: Date;
 
 	constructor(fileName: Loadable<string>, logger?: ILoggerLike) {
 		super();
-		this.fileName = fileName;
+		this.fileNameLoadable = fileName;
 		this.logger = logger;
 		this.setFileWatcher();
 		this.fileWatcher = this.fileWatcher.bind(this);
@@ -26,7 +27,12 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 
 	public async init(): Promise<void> {
 		this.logger?.debug(`FileUpdateNotify: init`);
-		await writeFile(await this.getFileName(), '0'); // init file with Epoch 0
+		const fileName = await this.getFileName();
+		if (existsSync(fileName)) {
+			this.currentFileTimeStamp = await this.getFileTimestamp();
+		} else {
+			await writeFile(fileName, '0'); // init file with Epoch 0
+		}
 		return this.setFileWatcher();
 	}
 
@@ -74,7 +80,7 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 		// ignore watcher events if writing
 		if (this.fileWatch && !this.isWriting && event === 'change') {
 			try {
-				const timeStamp = new Date(parseInt((await readFile(await this.getFileName())).toString(), 10));
+				const timeStamp = await this.getFileTimestamp();
 				// check if notify file is updated from outside and then emit change
 				if (this.currentFileTimeStamp?.getTime() !== timeStamp.getTime()) {
 					this.currentFileTimeStamp = timeStamp; // update currentFileTimeStamp
@@ -87,13 +93,37 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 		}
 	}
 
+	private async getFileTimestamp(): Promise<Date> {
+		return new Date(parseInt((await readFile(await this.getFileName())).toString(), 10));
+	}
+
 	/**
 	 * Build file name from fileNameOrPromise
 	 */
 	private async getFileName(): Promise<string> {
-		if (typeof this.fileName === 'function') {
-			this.fileName = this.fileName();
+		if (typeof this.fileNameLoadable === 'function') {
+			this.fileNameLoadable = this.fileNameLoadable();
 		}
-		return this.fileName;
+		this.fileName = await this.fileNameLoadable;
+		return this.fileNameLoadable;
+	}
+
+	public toString(): string {
+		if (!this.fileName) {
+			// istanbul ignore next
+			throw new Error(`${this.constructor.name} is not initialized yet`);
+		}
+		return `${this.constructor.name}: fileName: ${this.fileName}`;
+	}
+
+	public toJSON() {
+		if (!this.fileName) {
+			// istanbul ignore next
+			throw new Error(`${this.constructor.name} is not initialized yet`);
+		}
+		return {
+			fileName: this.fileName,
+			updated: this.currentFileTimeStamp?.getTime(),
+		};
 	}
 }

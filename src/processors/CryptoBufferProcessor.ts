@@ -8,8 +8,11 @@ import type {Loadable} from '@luolapeikko/ts-common';
  * - Secret Key is derived from a key buffer and build as sha256 hash key
  */
 export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
+	public readonly name = 'CryptoBufferProcessor';
 	private buffer: Loadable<Buffer>;
 	private key: string | undefined;
+
+	private readonly algorithm: crypto.CipherGCMTypes = 'aes-256-gcm';
 
 	constructor(keyBuffer: Loadable<Buffer>) {
 		this.buffer = keyBuffer;
@@ -45,7 +48,7 @@ export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
 		const key = await this.getKey();
 		return new Promise((resolve, reject) => {
 			const iv = crypto.randomBytes(12);
-			const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+			const cipher = crypto.createCipheriv(this.algorithm, key, iv);
 			const encrypted: Buffer[] = [];
 			cipher.on('data', (chunk) => {
 				encrypted.push(chunk);
@@ -65,7 +68,7 @@ export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
 			const iv = buffer.subarray(0, 12);
 			const tag = buffer.subarray(12, 28);
 			const encrypted = buffer.subarray(28);
-			const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+			const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
 			decipher.setAuthTag(tag);
 			const decrypted: Buffer[] = [];
 			decipher.on('readable', () => {
@@ -82,5 +85,16 @@ export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
 			decipher.write(encrypted);
 			decipher.end();
 		});
+	}
+
+	public toString() {
+		return `${this.name} algorithm: ${this.algorithm}`;
+	}
+
+	public toJSON() {
+		return {
+			name: this.name,
+			algorithm: this.algorithm,
+		};
 	}
 }

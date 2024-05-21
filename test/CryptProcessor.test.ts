@@ -22,4 +22,10 @@ describe('CryptoProcessor', () => {
 	it('should be valid processor', async () => {
 		expect(isValidStoreProcessor(processor)).to.be.true;
 	});
+	it('should get toString()', async () => {
+		expect(processor.toString()).to.be.equal('CryptoBufferProcessor algorithm: aes-256-gcm');
+	});
+	it('should get toJSON()', async () => {
+		expect(processor.toJSON()).to.be.eql({name: 'CryptoBufferProcessor', algorithm: 'aes-256-gcm'});
+	});
 });

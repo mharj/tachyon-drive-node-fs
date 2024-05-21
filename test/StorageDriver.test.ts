@@ -19,6 +19,7 @@ const dataSchema = zod.object({
 type Data = zod.infer<typeof dataSchema>;
 
 const jsonSerialization: IPersistSerializer<Data, string> = {
+	name: 'jsonSerialization',
 	deserialize: (buffer: string) => JSON.parse(buffer.toString()),
 	serialize: (data: Data) => JSON.stringify(data),
 	validator: (data: Data) => dataSchema.safeParse(data).success,
@@ -27,6 +28,7 @@ const jsonSerialization: IPersistSerializer<Data, string> = {
 const bufferSerializer: IPersistSerializer<Data, Buffer> = nextSerializer<Data, string, Buffer>(jsonSerialization, strToBufferSerializer);
 
 const objectSerializer: IPersistSerializer<Data, Data> = {
+	name: 'objectSerializer',
 	deserialize: (value: Data) => ({...value}),
 	serialize: (data: Data) => ({...data}),
 	validator: (data: Data) => dataSchema.safeParse(data).success,
@@ -96,14 +98,14 @@ describe('StorageDriver', () => {
 				expect(await currentDriver.hydrate()).to.eq(undefined);
 				expect(currentDriver.isInitialized).to.be.eq(true);
 				expect(onUpdateSpy.callCount).to.be.eq(0);
-				expect(loadCryptoProcessor.callCount).to.be.eq(0);
+				expect(loadCryptoProcessor.callCount).to.be.eq(crypto ? 1 : 0);
 			});
 			it('should store to storage driver', async () => {
 				await currentDriver.store(data);
 				expect(await currentDriver.hydrate()).to.eql(data);
 				expect(currentDriver.isInitialized).to.be.eq(true);
 				expect(onUpdateSpy.callCount).to.be.eq(0);
-				expect(loadCryptoProcessor.callCount).to.be.eq(crypto ? 1 : 0);
+				expect(loadCryptoProcessor.callCount).to.be.eq(0); // crypto loads only once
 			});
 			it('should restore data from storage driver', async () => {
 				expect(await currentDriver.hydrate()).to.eql(data);
