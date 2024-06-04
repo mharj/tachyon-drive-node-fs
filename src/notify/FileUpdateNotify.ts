@@ -1,9 +1,9 @@
 import {existsSync, type FSWatcher, watch} from 'node:fs';
 import {type ExternalNotifyEventEmitterConstructor, type IExternalNotify} from 'tachyon-drive';
+import {type Loadable, toError} from '@luolapeikko/ts-common';
 import {readFile, unlink, writeFile} from 'node:fs/promises';
 import {EventEmitter} from 'events';
 import {type ILoggerLike} from '@avanio/logger-like';
-import type {Loadable} from '@luolapeikko/ts-common';
 
 /**
  * FileUpdateNotify causes an event to be emitted when a file is updated.
@@ -21,7 +21,7 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 		super();
 		this.fileNameLoadable = fileName;
 		this.logger = logger;
-		this.setFileWatcher();
+		this.setFileWatcher().catch((e: unknown) => this.logger?.error(`FileUpdateNotify: constructor: ${toError(e).message}`));
 		this.fileWatcher = this.fileWatcher.bind(this);
 	}
 
@@ -45,7 +45,7 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 	public async notifyUpdate(timeStamp: Date): Promise<void> {
 		this.currentFileTimeStamp = timeStamp;
 		this.isWriting = true;
-		this.logger?.debug(`FileUpdateNotify: notifyUpdate: ${timeStamp.getTime()}`);
+		this.logger?.debug(`FileUpdateNotify: notifyUpdate: ${timeStamp.getTime().toString()}`);
 		await writeFile(await this.getFileName(), timeStamp.getTime().toString());
 		this.isWriting = false;
 	}
@@ -63,13 +63,13 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 		}
 	}
 
-	private async unsetFileWatcher(): Promise<boolean> {
+	private unsetFileWatcher(): Promise<boolean> {
 		if (this.fileWatch) {
 			this.fileWatch.close();
-			return true;
+			return Promise.resolve(true);
 		}
 		// istanbul ignore next
-		return false;
+		return Promise.resolve(false);
 	}
 
 	/**
@@ -84,11 +84,11 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 				// check if notify file is updated from outside and then emit change
 				if (this.currentFileTimeStamp?.getTime() !== timeStamp.getTime()) {
 					this.currentFileTimeStamp = timeStamp; // update currentFileTimeStamp
-					this.logger?.debug(`FileUpdateNotify: file change emit: ${timeStamp.getTime()}`);
+					this.logger?.debug(`FileUpdateNotify: file change emit: ${timeStamp.getTime().toString()}`);
 					this.emit('update', timeStamp);
 				}
 			} catch (e) {
-				this.logger?.error(`FileUpdateNotify: fileWatcher: ${e}`);
+				this.logger?.error(`FileUpdateNotify: fileWatcher: ${toError(e).message}`);
 			}
 		}
 	}

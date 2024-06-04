@@ -1,8 +1,8 @@
 import {existsSync, type FSWatcher, watch} from 'node:fs';
 import {type IPersistSerializer, type IStoreProcessor, StorageDriver, TachyonBandwidth} from 'tachyon-drive';
+import {type Loadable, toError} from '@luolapeikko/ts-common';
 import {readFile, unlink, writeFile} from 'fs/promises';
 import type {ILoggerLike} from '@avanio/logger-like';
-import type {Loadable} from '@luolapeikko/ts-common';
 
 export type FileStorageDriverOptions = {
 	/**
@@ -114,18 +114,18 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 		}
 	}
 
-	private async unsetFileWatcher(): Promise<boolean> {
+	private unsetFileWatcher(): Promise<boolean> {
 		if (this.fileWatch) {
 			this.fileWatch.close();
-			return true;
+			return Promise.resolve(true);
 		}
-		return false;
+		return Promise.resolve(false);
 	}
 
 	/**
 	 * method for file watcher instance
 	 */
-	private async fileWatcher(event: 'rename' | 'change') {
+	private fileWatcher(event: 'rename' | 'change') {
 		/* istanbul ignore next */
 		// ignore watcher events if writing
 		if (!this.isWriting && event === 'change') {
@@ -133,9 +133,13 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 				clearTimeout(this.fileChangeTimeout);
 			}
 			// delay to avoid multiple file change events
-			this.fileChangeTimeout = setTimeout(() => {
+			this.fileChangeTimeout = setTimeout(async () => {
 				this.fileChangeTimeout = undefined;
-				this.handleUpdate();
+				try {
+					await this.handleUpdate();
+				} catch (error) {
+					this.logger.error(`FileStorageDriver '${this.name}' failed to update data: ${toError(error).message}`);
+				}
 			}, 100);
 		}
 	}

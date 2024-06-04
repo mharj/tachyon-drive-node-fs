@@ -51,7 +51,7 @@ export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
 			const cipher = crypto.createCipheriv(this.algorithm, key, iv);
 			const encrypted: Buffer[] = [];
 			cipher.on('data', (chunk) => {
-				encrypted.push(chunk);
+				encrypted.push(chunk as Buffer);
 			});
 			cipher.on('end', () => {
 				resolve(Buffer.concat([iv, cipher.getAuthTag(), ...encrypted]));
@@ -72,10 +72,10 @@ export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
 			decipher.setAuthTag(tag);
 			const decrypted: Buffer[] = [];
 			decipher.on('readable', () => {
-				let chunk = decipher.read();
+				let chunk = decipher.read() as Buffer | null;
 				while (chunk !== null) {
 					decrypted.push(chunk);
-					chunk = decipher.read();
+					chunk = decipher.read() as Buffer | null;
 				}
 			});
 			decipher.on('end', () => {
