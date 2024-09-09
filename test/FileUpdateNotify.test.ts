@@ -1,6 +1,6 @@
 import 'mocha';
+import * as chai from 'chai';
 import {readFile, writeFile} from 'fs/promises';
-import chai from 'chai';
 import {existsSync} from 'fs';
 import {FileUpdateNotify} from '../src/index.js';
 import sinon from 'sinon';

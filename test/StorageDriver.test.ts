@@ -2,23 +2,23 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable sonarjs/no-duplicate-string */
 import 'mocha';
+import * as chai from 'chai';
 import {CryptoBufferProcessor, FileStorageDriver, type FileStorageDriverOptions, FileUpdateNotify, strToBufferSerializer} from '../src/index.js';
 import {type IPersistSerializer, type IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
 import {readFile, writeFile} from 'fs/promises';
-import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import zod from 'zod';
+import {z} from 'zod';
 
 chai.use(chaiAsPromised);
 
 const expect = chai.expect;
 
-const dataSchema = zod.object({
-	test: zod.string(),
+const dataSchema = z.object({
+	test: z.string(),
 });
 
-type Data = zod.infer<typeof dataSchema>;
+type Data = z.infer<typeof dataSchema>;
 
 const jsonSerialization: IPersistSerializer<Data, string> = {
 	name: 'jsonSerialization',

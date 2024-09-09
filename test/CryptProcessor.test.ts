@@ -1,5 +1,5 @@
 import 'mocha';
-import chai from 'chai';
+import * as chai from 'chai';
 import {CryptoBufferProcessor} from '../src/index.js';
 import {isValidStoreProcessor} from 'tachyon-drive';
 const expect = chai.expect;
