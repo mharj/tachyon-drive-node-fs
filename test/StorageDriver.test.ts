@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable sonarjs/no-duplicate-string */
 import 'mocha';
-import {CryptoBufferProcessor, FileStorageDriver, type FileStorageDriverOptions, FileUpdateNotify, strToBufferSerializer} from '../src/';
+import {CryptoBufferProcessor, FileStorageDriver, type FileStorageDriverOptions, FileUpdateNotify, strToBufferSerializer} from '../src/index.js';
 import {type IPersistSerializer, type IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
 import {readFile, writeFile} from 'fs/promises';
 import chai from 'chai';
@@ -40,7 +42,7 @@ function sleepPromise(ms: number): Promise<void> {
 	});
 }
 
-const loadCryptoProcessor = sinon.spy(async () => {
+const loadCryptoProcessor = sinon.spy(function () {
 	// const {CryptoBufferProcessor} = await import('tachyon-drive-node-fs'); // dynamic loading
 	return new CryptoBufferProcessor(() => Buffer.from('some-secret-key'));
 });
@@ -69,7 +71,7 @@ const driverSet = new Set<{driver: IStorageDriver<Data>; fileName?: string; cryp
 	{
 		driver: new FileStorageDriver(
 			'CryptFileStorageDriver - file: () => Promise<string>',
-			{fileName: async () => './test/test.aes'},
+			{fileName: () => Promise.resolve('./test/test.aes')},
 			bufferSerializer,
 			loadCryptoProcessor,
 		),
@@ -80,40 +82,40 @@ const driverSet = new Set<{driver: IStorageDriver<Data>; fileName?: string; cryp
 
 const data = dataSchema.parse({test: 'demo'});
 
-const onUpdateSpy = sinon.spy();
+const onUpdateSpy = sinon.spy((_value: Data | undefined) => {});
 
-describe('StorageDriver', () => {
+describe('StorageDriver', function () {
 	driverSet.forEach(({driver: currentDriver, fileName, crypto}) => {
-		describe(currentDriver.name, () => {
-			beforeEach(() => {
+		describe(currentDriver.name, function () {
+			beforeEach(function () {
 				onUpdateSpy.resetHistory();
 				loadCryptoProcessor.resetHistory();
 			});
-			before(async () => {
+			before(async function () {
 				currentDriver.on('update', onUpdateSpy);
 				await currentDriver.clear();
 				expect(currentDriver.isInitialized).to.be.eq(false);
 			});
-			it('should be empty store', async () => {
+			it('should be empty store', async function () {
 				expect(await currentDriver.hydrate()).to.eq(undefined);
 				expect(currentDriver.isInitialized).to.be.eq(true);
 				expect(onUpdateSpy.callCount).to.be.eq(0);
 				expect(loadCryptoProcessor.callCount).to.be.eq(crypto ? 1 : 0);
 			});
-			it('should store to storage driver', async () => {
+			it('should store to storage driver', async function () {
 				await currentDriver.store(data);
 				expect(await currentDriver.hydrate()).to.eql(data);
 				expect(currentDriver.isInitialized).to.be.eq(true);
 				expect(onUpdateSpy.callCount).to.be.eq(0);
 				expect(loadCryptoProcessor.callCount).to.be.eq(0); // crypto loads only once
 			});
-			it('should restore data from storage driver', async () => {
+			it('should restore data from storage driver', async function () {
 				expect(await currentDriver.hydrate()).to.eql(data);
 				expect(currentDriver.isInitialized).to.be.eq(true);
 				expect(onUpdateSpy.callCount).to.be.eq(0);
 				expect(loadCryptoProcessor.callCount).to.be.eq(0); // crypto loads only once
 			});
-			it('should noticed external file change and notify', async () => {
+			it('should noticed external file change and notify', async function () {
 				if (fileName) {
 					// MemoryStorageDriver with FileUpdateNotify does need actual time change to trigger update
 					if (currentDriver instanceof MemoryStorageDriver) {
@@ -125,22 +127,24 @@ describe('StorageDriver', () => {
 					expect(onUpdateSpy.callCount).to.be.greaterThan(0);
 				}
 			});
-			it('should clear to storage driver', async () => {
+			it('should clear to storage driver', async function () {
 				await currentDriver.clear();
 				expect(currentDriver.isInitialized).to.be.eq(false);
 				expect(await currentDriver.hydrate()).to.eq(undefined);
 				expect(currentDriver.isInitialized).to.be.eq(true);
 			});
-			it('should unload to storage driver', async () => {
+			it('should unload to storage driver', async function () {
 				expect(currentDriver.isInitialized).to.be.eq(true);
 				await currentDriver.unload();
 				expect(currentDriver.isInitialized).to.be.eq(false);
 				expect(onUpdateSpy.callCount).to.be.eq(0);
+
+				await currentDriver.unload(); // should be safe to call multiple times
 			});
 		});
 	});
-	describe('Broken StorageDriver', () => {
-		it('should fail to start if fileName is not valid', async () => {
+	describe('Broken StorageDriver', function () {
+		it('should fail to start if fileName is not valid', async function () {
 			const brokenDriver = new FileStorageDriver('BrokenDriver', {} as FileStorageDriverOptions, bufferSerializer);
 			await expect(brokenDriver.init()).to.be.eventually.rejectedWith(
 				Error,
@@ -148,8 +152,8 @@ describe('StorageDriver', () => {
 			);
 		});
 	});
-	describe('Broken serializer', () => {
-		it('should throw error if serialized does not provide buffer data', async () => {
+	describe('Broken serializer', function () {
+		it('should throw error if serialized does not provide buffer data', async function () {
 			const brokenSerializer = {
 				serialize: (data: Data) => data,
 				deserialize: (buffer: Buffer) => buffer,

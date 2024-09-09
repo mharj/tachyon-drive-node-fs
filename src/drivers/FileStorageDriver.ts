@@ -126,7 +126,6 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	 * method for file watcher instance
 	 */
 	private fileWatcher(event: 'rename' | 'change') {
-		/* istanbul ignore next */
 		// ignore watcher events if writing
 		if (!this.isWriting && event === 'change') {
 			if (this.fileChangeTimeout) {
@@ -138,6 +137,7 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 				try {
 					await this.handleUpdate();
 				} catch (error) {
+					/* c8 ignore next 2 */
 					this.logger.error(`FileStorageDriver '${this.name}' failed to update data: ${toError(error).message}`);
 				}
 			}, 100);

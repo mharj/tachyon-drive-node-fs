@@ -1,5 +1,5 @@
 import {existsSync, type FSWatcher, watch} from 'node:fs';
-import {type ExternalNotifyEventEmitterConstructor, type IExternalNotify} from 'tachyon-drive';
+import {type ExternalNotifyEventsMap, type IExternalNotify} from 'tachyon-drive';
 import {type Loadable, toError} from '@luolapeikko/ts-common';
 import {readFile, unlink, writeFile} from 'node:fs/promises';
 import {EventEmitter} from 'events';
@@ -9,7 +9,7 @@ import {type ILoggerLike} from '@avanio/logger-like';
  * FileUpdateNotify causes an event to be emitted when a file is updated.
  * - Can be used to notify when storage driver itself can't handle store change events.
  */
-export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitterConstructor) implements IExternalNotify {
+export class FileUpdateNotify extends EventEmitter<ExternalNotifyEventsMap> implements IExternalNotify {
 	private isWriting = false;
 	private fileNameLoadable: Loadable<string>;
 	private fileName: string | undefined;
@@ -39,7 +39,10 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 	public async unload(): Promise<void> {
 		this.logger?.debug(`FileUpdateNotify: unload`);
 		await this.unsetFileWatcher();
-		return unlink(await this.getFileName());
+		const fileName = await this.getFileName();
+		if (existsSync(fileName)) {
+			return unlink(fileName);
+		}
 	}
 
 	public async notifyUpdate(timeStamp: Date): Promise<void> {
@@ -66,9 +69,9 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 	private unsetFileWatcher(): Promise<boolean> {
 		if (this.fileWatch) {
 			this.fileWatch.close();
+			this.fileWatch = undefined;
 			return Promise.resolve(true);
 		}
-		// istanbul ignore next
 		return Promise.resolve(false);
 	}
 
@@ -76,7 +79,6 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 	 * method for file watcher instance
 	 */
 	private async fileWatcher(event: 'rename' | 'change') {
-		/* istanbul ignore next */
 		// ignore watcher events if writing
 		if (this.fileWatch && !this.isWriting && event === 'change') {
 			try {
@@ -88,6 +90,7 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 					this.emit('update', timeStamp);
 				}
 			} catch (e) {
+				/* c8 ignore next 2 */
 				this.logger?.error(`FileUpdateNotify: fileWatcher: ${toError(e).message}`);
 			}
 		}
@@ -109,21 +112,21 @@ export class FileUpdateNotify extends (EventEmitter as ExternalNotifyEventEmitte
 	}
 
 	public toString(): string {
-		if (!this.fileName) {
-			// istanbul ignore next
-			throw new Error(`${this.constructor.name} is not initialized yet`);
-		}
+		this.assertIsInitialized(this.fileName);
 		return `${this.constructor.name}: fileName: ${this.fileName}`;
 	}
 
 	public toJSON() {
-		if (!this.fileName) {
-			// istanbul ignore next
-			throw new Error(`${this.constructor.name} is not initialized yet`);
-		}
+		this.assertIsInitialized(this.fileName);
 		return {
 			fileName: this.fileName,
 			updated: this.currentFileTimeStamp?.getTime(),
 		};
+	}
+
+	private assertIsInitialized(fileName: string | undefined): asserts fileName is string {
+		if (!fileName) {
+			throw new Error(`${this.constructor.name} is not initialized yet`);
+		}
 	}
 }
