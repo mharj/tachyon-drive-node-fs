@@ -1,18 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable sonarjs/no-duplicate-string */
-import 'mocha';
-import * as chai from 'chai';
+import {afterEach, beforeAll, beforeEach, describe, expect, it} from 'vitest';
 import {CryptoBufferProcessor, FileStorageDriver, type FileStorageDriverOptions, FileUpdateNotify, strToBufferSerializer} from '../src/index.js';
 import {type IPersistSerializer, type IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
 import {readFile, writeFile} from 'fs/promises';
-import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import {z} from 'zod';
-
-chai.use(chaiAsPromised);
-
-const expect = chai.expect;
 
 const dataSchema = z.object({
 	test: z.string(),
@@ -91,29 +85,29 @@ describe('StorageDriver', function () {
 				onUpdateSpy.resetHistory();
 				loadCryptoProcessor.resetHistory();
 			});
-			before(async function () {
+			beforeAll(async function () {
 				currentDriver.on('update', onUpdateSpy);
 				await currentDriver.clear();
-				expect(currentDriver.isInitialized).to.be.eq(false);
+				expect(currentDriver.isInitialized).equals(false);
 			});
 			it('should be empty store', async function () {
-				expect(await currentDriver.hydrate()).to.eq(undefined);
-				expect(currentDriver.isInitialized).to.be.eq(true);
-				expect(onUpdateSpy.callCount).to.be.eq(0);
-				expect(loadCryptoProcessor.callCount).to.be.eq(crypto ? 1 : 0);
+				await expect(currentDriver.hydrate()).resolves.toEqual(undefined);
+				expect(currentDriver.isInitialized).equals(true);
+				expect(onUpdateSpy.callCount).equals(0);
+				expect(loadCryptoProcessor.callCount).equals(crypto ? 1 : 0);
 			});
 			it('should store to storage driver', async function () {
 				await currentDriver.store(data);
-				expect(await currentDriver.hydrate()).to.eql(data);
-				expect(currentDriver.isInitialized).to.be.eq(true);
-				expect(onUpdateSpy.callCount).to.be.eq(0);
-				expect(loadCryptoProcessor.callCount).to.be.eq(0); // crypto loads only once
+				await expect(currentDriver.hydrate()).resolves.toStrictEqual(data);
+				expect(currentDriver.isInitialized).equals(true);
+				expect(onUpdateSpy.callCount).equals(0);
+				expect(loadCryptoProcessor.callCount).equals(0); // crypto loads only once
 			});
 			it('should restore data from storage driver', async function () {
-				expect(await currentDriver.hydrate()).to.eql(data);
-				expect(currentDriver.isInitialized).to.be.eq(true);
-				expect(onUpdateSpy.callCount).to.be.eq(0);
-				expect(loadCryptoProcessor.callCount).to.be.eq(0); // crypto loads only once
+				await expect(currentDriver.hydrate()).resolves.toStrictEqual(data);
+				expect(currentDriver.isInitialized).equals(true);
+				expect(onUpdateSpy.callCount).equals(0);
+				expect(loadCryptoProcessor.callCount).equals(0); // crypto loads only once
 			});
 			it('should noticed external file change and notify', async function () {
 				if (fileName) {
@@ -129,15 +123,15 @@ describe('StorageDriver', function () {
 			});
 			it('should clear to storage driver', async function () {
 				await currentDriver.clear();
-				expect(currentDriver.isInitialized).to.be.eq(false);
-				expect(await currentDriver.hydrate()).to.eq(undefined);
-				expect(currentDriver.isInitialized).to.be.eq(true);
+				expect(currentDriver.isInitialized).equals(false);
+				await expect(currentDriver.hydrate()).resolves.toEqual(undefined);
+				expect(currentDriver.isInitialized).equals(true);
 			});
 			it('should unload to storage driver', async function () {
-				expect(currentDriver.isInitialized).to.be.eq(true);
+				expect(currentDriver.isInitialized).equals(true);
 				await currentDriver.unload();
-				expect(currentDriver.isInitialized).to.be.eq(false);
-				expect(onUpdateSpy.callCount).to.be.eq(0);
+				expect(currentDriver.isInitialized).equals(false);
+				expect(onUpdateSpy.callCount).equals(0);
 
 				await currentDriver.unload(); // should be safe to call multiple times
 			});
@@ -146,8 +140,7 @@ describe('StorageDriver', function () {
 	describe('Broken StorageDriver', function () {
 		it('should fail to start if fileName is not valid', async function () {
 			const brokenDriver = new FileStorageDriver('BrokenDriver', {} as FileStorageDriverOptions, bufferSerializer);
-			await expect(brokenDriver.init()).to.be.eventually.rejectedWith(
-				Error,
+			await expect(brokenDriver.init()).to.rejects.toThrowError(
 				`FileStorageDriver 'BrokenDriver' fileName argument must return a string, value: undefined`,
 			);
 		});
@@ -161,7 +154,7 @@ describe('StorageDriver', function () {
 			} as unknown as IPersistSerializer<Data, Buffer>;
 
 			const brokenDriver = new FileStorageDriver('BrokenSerializer', {fileName: './test/test.json'}, brokenSerializer);
-			await expect(brokenDriver.store(data)).to.be.rejectedWith(TypeError, `FileStorageDriver 'BrokenSerializer' can only store Buffers`);
+			await expect(brokenDriver.store(data)).to.rejects.toThrowError(`FileStorageDriver 'BrokenSerializer' can only store Buffers`);
 		});
 	});
 });

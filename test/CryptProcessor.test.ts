@@ -1,8 +1,7 @@
-import 'mocha';
-import * as chai from 'chai';
+import {describe, expect, it} from 'vitest';
 import {CryptoBufferProcessor} from '../src/index.js';
 import {isValidStoreProcessor} from 'tachyon-drive';
-const expect = chai.expect;
+
 const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
 
 const data = Buffer.from('test');
@@ -25,6 +24,6 @@ describe('CryptoProcessor', function () {
 		expect(processor.toString()).to.be.equal('CryptoBufferProcessor algorithm: aes-256-gcm');
 	});
 	it('should get toJSON()', function () {
-		expect(processor.toJSON()).to.be.eql({name: 'CryptoBufferProcessor', algorithm: 'aes-256-gcm'});
+		expect(processor.toJSON()).toStrictEqual({name: 'CryptoBufferProcessor', algorithm: 'aes-256-gcm'});
 	});
 });
