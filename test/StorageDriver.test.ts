@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable sonarjs/no-duplicate-string */
-import {afterEach, beforeAll, beforeEach, describe, expect, it} from 'vitest';
+import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
 import {CryptoBufferProcessor, FileStorageDriver, type FileStorageDriverOptions, FileUpdateNotify, strToBufferSerializer} from '../src/index.js';
 import {type IPersistSerializer, type IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
 import {readFile, writeFile} from 'fs/promises';
@@ -140,9 +140,7 @@ describe('StorageDriver', function () {
 	describe('Broken StorageDriver', function () {
 		it('should fail to start if fileName is not valid', async function () {
 			const brokenDriver = new FileStorageDriver('BrokenDriver', {} as FileStorageDriverOptions, bufferSerializer);
-			await expect(brokenDriver.init()).to.rejects.toThrowError(
-				`FileStorageDriver 'BrokenDriver' fileName argument must return a string, value: undefined`,
-			);
+			await expect(brokenDriver.init()).to.rejects.toThrowError(`FileStorageDriver 'BrokenDriver' fileName argument must return a string, value: undefined`);
 		});
 	});
 	describe('Broken serializer', function () {

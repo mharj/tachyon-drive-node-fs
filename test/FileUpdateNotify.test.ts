@@ -1,4 +1,4 @@
-import {afterEach, beforeAll, beforeEach, describe, expect, it} from 'vitest';
+import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
 import {readFile, writeFile} from 'fs/promises';
 import {existsSync} from 'fs';
 import {FileUpdateNotify} from '../src/index.js';
