@@ -3,4 +3,4 @@ node_modules
 .github
 .nyc_output
 coverage
-vite.config.ts
+vite.config.mts
