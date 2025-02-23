@@ -1,6 +1,6 @@
+import {isValidStoreProcessor} from 'tachyon-drive';
 import {describe, expect, it} from 'vitest';
 import {CryptoBufferProcessor} from '../src/index.js';
-import {isValidStoreProcessor} from 'tachyon-drive';
 
 const processor = new CryptoBufferProcessor(Buffer.from('some-secret-key'));
 

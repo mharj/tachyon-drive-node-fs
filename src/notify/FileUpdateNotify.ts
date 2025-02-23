@@ -1,9 +1,9 @@
-import {existsSync, type FSWatcher, watch} from 'node:fs';
-import {type ExternalNotifyEventsMap, type IExternalNotify} from 'tachyon-drive';
-import {type Loadable, toError} from '@luolapeikko/ts-common';
-import {readFile, unlink, writeFile} from 'node:fs/promises';
 import {EventEmitter} from 'events';
+import {existsSync, type FSWatcher, watch} from 'node:fs';
+import {readFile, unlink, writeFile} from 'node:fs/promises';
 import {type ILoggerLike} from '@avanio/logger-like';
+import {type Loadable, toError} from '@luolapeikko/ts-common';
+import {type ExternalNotifyEventsMap, type IExternalNotify} from 'tachyon-drive';
 
 /**
  * FileUpdateNotify causes an event to be emitted when a file is updated.
@@ -16,6 +16,8 @@ export class FileUpdateNotify extends EventEmitter<ExternalNotifyEventsMap> impl
 	private fileWatch: FSWatcher | undefined;
 	private logger?: ILoggerLike;
 	private currentFileTimeStamp?: Date;
+
+	private fileChangeTimeout: ReturnType<typeof setTimeout> | undefined;
 
 	constructor(fileName: Loadable<string>, logger?: ILoggerLike) {
 		super();
@@ -53,6 +55,19 @@ export class FileUpdateNotify extends EventEmitter<ExternalNotifyEventsMap> impl
 		this.isWriting = false;
 	}
 
+	public toString(): string {
+		this.assertIsInitialized(this.fileName);
+		return `${this.constructor.name}: fileName: ${this.fileName}`;
+	}
+
+	public toJSON() {
+		this.assertIsInitialized(this.fileName);
+		return {
+			fileName: this.fileName,
+			updated: this.currentFileTimeStamp?.getTime(),
+		};
+	}
+
 	/**
 	 * Set file watcher if file exists
 	 */
@@ -78,21 +93,27 @@ export class FileUpdateNotify extends EventEmitter<ExternalNotifyEventsMap> impl
 	/**
 	 * method for file watcher instance
 	 */
-	private async fileWatcher(event: 'rename' | 'change') {
+	private fileWatcher(event: 'rename' | 'change') {
 		// ignore watcher events if writing
 		if (this.fileWatch && !this.isWriting && event === 'change') {
-			try {
-				const timeStamp = await this.getFileTimestamp();
-				// check if notify file is updated from outside and then emit change
-				if (this.currentFileTimeStamp?.getTime() !== timeStamp.getTime()) {
-					this.currentFileTimeStamp = timeStamp; // update currentFileTimeStamp
-					this.logger?.debug(`FileUpdateNotify: file change emit: ${timeStamp.getTime().toString()}`);
-					this.emit('update', timeStamp);
-				}
-			} catch (e) {
-				/* c8 ignore next 2 */
-				this.logger?.error(`FileUpdateNotify: fileWatcher: ${toError(e).message}`);
+			if (this.fileChangeTimeout) {
+				clearTimeout(this.fileChangeTimeout);
 			}
+			// delay to avoid multiple file change events
+			this.fileChangeTimeout = setTimeout(async () => {
+				try {
+					const timeStamp = await this.getFileTimestamp();
+					// check if notify file is updated from outside and then emit change
+					if (this.currentFileTimeStamp?.getTime() !== timeStamp.getTime()) {
+						this.currentFileTimeStamp = timeStamp; // update currentFileTimeStamp
+						this.logger?.debug(`FileUpdateNotify: file change emit: ${timeStamp.getTime().toString()}`);
+						this.emit('update', timeStamp);
+					}
+				} catch (e) {
+					/* c8 ignore next 2 */
+					this.logger?.error(`FileUpdateNotify: fileWatcher: ${toError(e).message}`);
+				}
+			}, 100);
 		}
 	}
 
@@ -109,19 +130,6 @@ export class FileUpdateNotify extends EventEmitter<ExternalNotifyEventsMap> impl
 		}
 		this.fileName = await this.fileNameLoadable;
 		return this.fileNameLoadable;
-	}
-
-	public toString(): string {
-		this.assertIsInitialized(this.fileName);
-		return `${this.constructor.name}: fileName: ${this.fileName}`;
-	}
-
-	public toJSON() {
-		this.assertIsInitialized(this.fileName);
-		return {
-			fileName: this.fileName,
-			updated: this.currentFileTimeStamp?.getTime(),
-		};
 	}
 
 	private assertIsInitialized(fileName: string | undefined): asserts fileName is string {

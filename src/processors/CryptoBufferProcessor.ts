@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
-import {type IStoreProcessor} from 'tachyon-drive';
 import type {Loadable} from '@luolapeikko/ts-common';
+import {type IStoreProcessor} from 'tachyon-drive';
 
 /**
  * A processor that encrypts and decrypts Buffer data.
@@ -24,6 +24,17 @@ export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
 
 	public async postHydrate(buffer: Buffer): Promise<Buffer> {
 		return this.decryptPromise(buffer);
+	}
+
+	public toString() {
+		return `${this.name} algorithm: ${this.algorithm}`;
+	}
+
+	public toJSON() {
+		return {
+			name: this.name,
+			algorithm: this.algorithm,
+		};
 	}
 
 	private async getKey(): Promise<string> {
@@ -85,16 +96,5 @@ export class CryptoBufferProcessor implements IStoreProcessor<Buffer> {
 			decipher.write(encrypted);
 			decipher.end();
 		});
-	}
-
-	public toString() {
-		return `${this.name} algorithm: ${this.algorithm}`;
-	}
-
-	public toJSON() {
-		return {
-			name: this.name,
-			algorithm: this.algorithm,
-		};
 	}
 }

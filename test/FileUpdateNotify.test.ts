@@ -1,8 +1,8 @@
-import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
-import {readFile, writeFile} from 'fs/promises';
 import {existsSync} from 'fs';
-import {FileUpdateNotify} from '../src/index.js';
+import {readFile, writeFile} from 'fs/promises';
 import sinon from 'sinon';
+import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
+import {FileUpdateNotify} from '../src/index.js';
 
 let notify: FileUpdateNotify;
 

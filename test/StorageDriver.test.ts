@@ -1,12 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable sonarjs/no-duplicate-string */
-import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
-import {CryptoBufferProcessor, FileStorageDriver, type FileStorageDriverOptions, FileUpdateNotify, strToBufferSerializer} from '../src/index.js';
-import {type IPersistSerializer, type IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
 import {readFile, writeFile} from 'fs/promises';
 import sinon from 'sinon';
+import {type IPersistSerializer, type IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
+import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
 import {z} from 'zod';
+import {CryptoBufferProcessor, FileStorageDriver, type FileStorageDriverOptions, FileUpdateNotify, strToBufferSerializer} from '../src/index.js';
 
 const dataSchema = z.object({
 	test: z.string(),
@@ -16,7 +13,7 @@ type Data = z.infer<typeof dataSchema>;
 
 const jsonSerialization: IPersistSerializer<Data, string> = {
 	name: 'jsonSerialization',
-	deserialize: (buffer: string) => JSON.parse(buffer.toString()),
+	deserialize: (buffer: string) => JSON.parse(buffer.toString()) as Data,
 	serialize: (data: Data) => JSON.stringify(data),
 	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
