@@ -1,6 +1,6 @@
 {
 	"name": "tachyon-drive-node-fs",
-	"version": "0.10.1",
+	"version": "0.11.0",
 	"description": "Nodejs fs module storage driver implementation",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
