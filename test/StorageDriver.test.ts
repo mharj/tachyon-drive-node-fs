@@ -1,5 +1,5 @@
 import {readFile, writeFile} from 'fs/promises';
-import sinon from 'sinon';
+import {spy} from 'sinon';
 import {type IPersistSerializer, type IStorageDriver, MemoryStorageDriver, nextSerializer} from 'tachyon-drive';
 import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
 import {z} from 'zod';
@@ -33,8 +33,7 @@ function sleepPromise(ms: number): Promise<void> {
 	});
 }
 
-const loadCryptoProcessor = sinon.spy(function () {
-	// const {CryptoBufferProcessor} = await import('tachyon-drive-node-fs'); // dynamic loading
+const loadCryptoProcessor = spy(function () {
 	return new CryptoBufferProcessor(() => Buffer.from('some-secret-key'));
 });
 
@@ -73,7 +72,7 @@ const driverSet = new Set<{driver: IStorageDriver<Data>; fileName?: string; cryp
 
 const data = dataSchema.parse({test: 'demo'});
 
-const onUpdateSpy = sinon.spy((_value: Data | undefined) => {});
+const onUpdateSpy = spy((_value: Data | undefined) => {});
 
 describe('StorageDriver', function () {
 	driverSet.forEach(({driver: currentDriver, fileName, crypto}) => {

@@ -23,7 +23,6 @@ export class FileUpdateNotify extends EventEmitter<ExternalNotifyEventsMap> impl
 		super();
 		this.fileNameLoadable = fileName;
 		this.logger = logger;
-		this.setFileWatcher().catch((e: unknown) => this.logger?.error(`FileUpdateNotify: constructor: ${toError(e).message}`));
 		this.fileWatcher = this.fileWatcher.bind(this);
 	}
 

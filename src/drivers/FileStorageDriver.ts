@@ -41,10 +41,10 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 		options: FileStorageDriverOptions,
 		serializer: IPersistSerializer<Input, Buffer>,
 		processor?: Loadable<IStoreProcessor<Buffer>>,
-		logger?: ILoggerLike | Console,
+		logger?: ILoggerLike,
 	) {
 		super(name, serializer, null, processor, logger);
-		this.bandwidth = options.bandwidth || TachyonBandwidth.Large;
+		this.bandwidth = options.bandwidth ?? TachyonBandwidth.Large;
 		this.fileName = options.fileName;
 		this.fileWatcher = this.fileWatcher.bind(this);
 	}
@@ -148,6 +148,7 @@ export class FileStorageDriver<Input> extends StorageDriver<Input, Buffer> {
 	 * Build file name from fileNameOrPromise
 	 */
 	private async getFileName(): Promise<string> {
+		// lock down file name as this can't be changed after change events
 		if (typeof this.fileName === 'function') {
 			this.fileName = this.fileName();
 		}

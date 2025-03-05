@@ -1,6 +1,6 @@
 import {existsSync} from 'fs';
 import {readFile, writeFile} from 'fs/promises';
-import sinon from 'sinon';
+import {spy} from 'sinon';
 import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
 import {FileUpdateNotify} from '../src/index.js';
 
@@ -14,7 +14,7 @@ function sleepPromise(ms: number): Promise<void> {
 	});
 }
 
-const fileEventSpy = sinon.spy();
+const fileEventSpy = spy();
 
 describe('FileUpdateNotify', function () {
 	beforeEach(function () {
@@ -47,10 +47,10 @@ describe('FileUpdateNotify', function () {
 	});
 	it('should get toString()', function () {
 		expect(notify.toString()).to.be.equal(`FileUpdateNotify: fileName: ${fileName}`);
-		expect(() => new FileUpdateNotify(() => fileName).toString(), 'not initialized yet').to.throw();
+		expect(() => new FileUpdateNotify(() => fileName).toString(), 'not initialized yet').to.throw(Error, 'not initialized yet');
 	});
 	it('should get toJSON()', function () {
 		expect(notify.toJSON()).toStrictEqual({fileName, updated: 20});
-		expect(() => new FileUpdateNotify(() => fileName).toJSON(), 'not initialized yet').to.throw();
+		expect(() => new FileUpdateNotify(() => fileName).toJSON(), 'not initialized yet').to.throw(Error, 'not initialized yet');
 	});
 });
